@@ -5,9 +5,8 @@ import 'dart:typed_data';
 
 
 import 'package:dttp_mqtt/src/message/message.dart';
-import 'package:dttp_mqtt/src/session_manager.dart';
 
-import 'message/message_deletagor.dart';
+import 'message/message_delegator.dart';
 
 class Server {
   static final delegator = MessageDelegator();
