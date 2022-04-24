@@ -1,0 +1,29 @@
+class MessageProperties {
+  static const payloadFormatIndicator = 0x01;
+  static const messageExpiryInterval = 0x02;
+  static const contentType = 0x03;
+  static const responseTopic = 0x08;
+  static const correlationData = 0x09;
+  static const subscriptionIdentifier = 0x0B;
+  static const sessionExpiryInterval = 0x11;
+  static const assignedClientIdentifier = 0x12;
+  static const serverKeepAlive = 0x13;
+  static const authenticationMethod = 0x15;
+  static const authenticationData = 0x16;
+  static const requestProblemInformation = 0x17;
+  static const willDelayInterval = 0x18;
+  static const requestResponseInformation = 0x19;
+  static const responseInformation = 0x1A;
+  static const serverReference = 0x1C;
+  static const reasonString = 0x1F;
+  static const receiveMaximum = 0x21;
+  static const topicAliasMaximum = 0x22;
+  static const topicAlias = 0x23;
+  static const maximumQos = 0x24;
+  static const retainAvailable = 0x25;
+  static const userProperty = 0x26;
+  static const maximumPacketSize = 0x27;
+  static const wildcardSubscriptionAvailable = 0x28;
+  static const subscriptionIdentifierAvailable = 0x29;
+  static const sharedSubscriptionAvailable = 0x2A;
+}
