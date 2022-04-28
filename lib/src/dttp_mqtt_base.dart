@@ -3,6 +3,8 @@
 
 import 'package:dttp_mqtt/src/server.dart';
 
+export 'server.dart';
+
 main() {
-  Server();
+  Server('localhost',6000);
 }

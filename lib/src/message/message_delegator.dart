@@ -9,17 +9,12 @@ class MessageDelegator {
   void delegate(Uint8List uint8list, Socket socket) {
     final type = MessageTypeUtil.valueOf(uint8list[0] >> 4);
     switch (type) {
-      case MessageType.reserved:
+      case MessageType.publish:
+        var publish = PublishMessageDecoder().decode(uint8list, socket);
         break;
       case MessageType.connect:
         var connack = ConnectMessageDecoder().decode(uint8list, socket);
         socket.add(connack.toByte());
-        break;
-      case MessageType.connack:
-        // TODO: Handle this case.
-        break;
-      case MessageType.publish:
-        // TODO: Handle this case.
         break;
       case MessageType.puback:
         // TODO: Handle this case.
@@ -37,22 +32,14 @@ class MessageDelegator {
         var suback = SubscribeMessageDecoder().decode(uint8list, socket);
         // socket.add(suback.toByte());
         break;
-      case MessageType.suback:
-        // TODO: Handle this case.
-        break;
       case MessageType.unsubscribe:
-        break;
-      case MessageType.unsuback:
-        // TODO: Handle this case.
+        var unsuback = UnsubscribeMessageDecoder().decode(uint8list, socket);
         break;
       case MessageType.pingreq:
-        // TODO: Handle this case.
-        break;
-      case MessageType.pingresp:
-        // TODO: Handle this case.
+        var pingresp = PingreqMessageDecoder().decode(uint8list, socket);
         break;
       case MessageType.disconnect:
-        // TODO: Handle this case.
+        DisconnectMessageDecoder().decode(uint8list, socket);
         break;
       case MessageType.auth:
         // TODO: Handle this case.

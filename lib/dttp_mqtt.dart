@@ -3,6 +3,6 @@
 /// More dartdocs go here.
 library dttp_mqtt;
 
-export 'src/dttp_mqtt_base.dart';
+export 'src/server.dart';
 
 // TODO: Export any libraries intended for clients of this package.

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:dttp_mqtt/src/client.dart';
 
@@ -8,7 +9,7 @@ import '../session_manager.dart';
 import 'message_enums.dart';
 
 enum ProtocolVersion {
-  mqtt_311,
+  mqtt_3_1_1,
   mqtt_5,
 }
 
@@ -42,10 +43,10 @@ class ConnectMessage extends Message with ResponseMessage {
   final ProtocolVersion version;
 
   ConnectMessage({
-    this.version = ProtocolVersion.mqtt_311,
+    this.version = ProtocolVersion.mqtt_3_1_1,
   }) : super(
-          type: MessageType.connect,
-        );
+    type: MessageType.connect,
+  );
 }
 
 class ConnackMessage extends Message with RequestMessage {
@@ -80,7 +81,10 @@ class SubackMessage extends Message with RequestMessage {
 
   @override
   Uint8List toByte() {
-    final variableHeader = Uint16List.fromList([packetIdentifier]).buffer.asUint8List();
+    final variableHeader = Uint16List
+        .fromList([packetIdentifier])
+        .buffer
+        .asUint8List();
     final payload = Uint8List.fromList(qoss);
     final bytes = Uint8List.fromList([
       type.fixedHeader(),
@@ -114,12 +118,16 @@ class PublishMessage extends Message with ResponseMessage, RequestMessage {
     int qosShift = qos == 2
         ? 4
         : (qos == 1)
-            ? 2
-            : 0;
+        ? 2
+        : 0;
     int shift = duplicateFlag * 8 + qosShift + retain;
     final topicBytes = utf8.encode(topic);
     final variableHeader = Uint8List.fromList([
-      ...Uint16List.fromList([topicBytes.length]).buffer.asUint8List().reversed,
+      ...Uint16List
+          .fromList([topicBytes.length])
+          .buffer
+          .asUint8List()
+          .reversed,
       ...topicBytes
     ]);
     //TODO support packet identifier
@@ -127,9 +135,29 @@ class PublishMessage extends Message with ResponseMessage, RequestMessage {
       type.fixedHeader(shift),
       variableHeader.lengthInBytes + payload.lengthInBytes,
       ...variableHeader,
-      ...payload.toList()
+      ...payload
     ]);
     return bytes;
+  }
+}
+
+class UnsubackMessage extends Message with RequestMessage {
+
+  final int packetIdentifier;
+
+  UnsubackMessage({required this.packetIdentifier}) : super(type: MessageType.unsuback);
+
+  @override
+  Uint8List toByte() {
+    final variableHeader = Uint16List
+        .fromList([packetIdentifier])
+        .buffer
+        .asUint8List();
+    return Uint8List.fromList([
+      type.fixedHeader(),
+      variableHeader.lengthInBytes,
+      ...variableHeader
+    ]);
   }
 }
 
@@ -169,42 +197,47 @@ class ConnectMessageDecoder extends MessageDecoder {
 
     int currentIndex = 8;
 
-    print('version: ' + ProtocolVersionUtil.getProtocolVersion(uint8list[currentIndex]).name);
+    // print('version: ' + ProtocolVersionUtil.getProtocolVersion(uint8list[currentIndex]).name);
     currentIndex++;
 
-    print('number of bytes: ' + uint8list.length.toString());
+    // print('number of bytes: ' + uint8list.length.toString());
     final bits = uint8list[currentIndex].toRadixString(2);
-    print('connect flag bits: ' + bits);
+    // print('connect flag bits: ' + bits);
     final cleanSession = uint8list[currentIndex].isBitSet(1);
-    print('clean session: ' + cleanSession.toString());
+    // print('clean session: ' + cleanSession.toString());
     final cleanWill = uint8list[currentIndex].isBitSet(2);
-    print('clean will flag: ' + cleanWill.toString());
+    // print('clean will flag: ' + cleanWill.toString());
     final willQos = (uint8list[currentIndex].isBitSet(3)
         ? 1
         : 0 + (uint8list[currentIndex].isBitSet(4) ? 1 : 0));
-    print('will qos: ' + (willQos.toString()));
+    // print('will qos: ' + (willQos.toString()));
     final willRetain = uint8list[currentIndex].isBitSet(5);
-    print('will retain: ' + willRetain.toString());
+    // print('will retain: ' + willRetain.toString());
     final passwordFlag = uint8list[currentIndex].isBitSet(6);
-    print('password flag: ' + passwordFlag.toString());
+    // print('password flag: ' + passwordFlag.toString());
     final usernameFlag = uint8list[currentIndex].isBitSet(7);
-    print('user name flag $usernameFlag');
+    // print('user name flag $usernameFlag');
 
     currentIndex++;
     final keepAliveSeconds =
-        Uint8List.fromList([uint8list[currentIndex++], uint8list[currentIndex++]])
-            .buffer
-            .asByteData()
-            .getUint16(0)
-            .toString();
-    print('Keep alive: ' + keepAliveSeconds);
+    Uint8List
+        .fromList([uint8list[currentIndex++], uint8list[currentIndex++]])
+        .buffer
+        .asByteData()
+        .getUint16(0)
+        .toString();
+    // print('Keep alive: ' + keepAliveSeconds);
 
     final clientIdStringLength =
-        uint8list.sublist(currentIndex++, ++currentIndex).buffer.asByteData().getUint16(0);
+    uint8list
+        .sublist(currentIndex++, ++currentIndex)
+        .buffer
+        .asByteData()
+        .getUint16(0);
     final clientIdString =
-        utf8.decode(uint8list.sublist(currentIndex, currentIndex + clientIdStringLength));
+    utf8.decode(uint8list.sublist(currentIndex, currentIndex + clientIdStringLength));
 
-    print('client id: ' + clientIdString);
+    // print('client id: ' + clientIdString);
 
     currentIndex += clientIdStringLength;
 
@@ -212,21 +245,20 @@ class ConnectMessageDecoder extends MessageDecoder {
       final usernameLength = uint8list.buffer.asByteData(currentIndex++).getUint16(0);
       currentIndex++;
       final usernameString =
-          utf8.decode(uint8list.sublist(currentIndex, currentIndex + usernameLength));
+      utf8.decode(uint8list.sublist(currentIndex, currentIndex + usernameLength));
       currentIndex += usernameLength;
-      print('username: ' + usernameString);
+      // print('username: ' + usernameString);
     }
 
-    print(currentIndex);
+    // print(currentIndex);
 
-    if(passwordFlag) {
+    if (passwordFlag) {
+      final passwordLength = uint8list.buffer.asByteData(currentIndex++).getUint16(0);
+      final passwordString =
+      utf8.decode(uint8list.sublist(++currentIndex, currentIndex + passwordLength));
+      currentIndex += passwordLength;
 
-    final passwordLength = uint8list.buffer.asByteData(currentIndex++).getUint16(0);
-    final passwordString =
-        utf8.decode(uint8list.sublist(++currentIndex, currentIndex + passwordLength));
-    currentIndex += passwordLength;
-
-    print('password: $passwordString');
+      // print('password: $passwordString');
     }
 
     //TODO implement will topic
@@ -277,20 +309,20 @@ class SubscribeMessageDecoder implements MessageDecoder {
   @override
   SubackMessage decode(Uint8List uint8list, Socket socket) {
     final buffer = uint8list.buffer;
-    print(uint8list.asMap());
+    // print(uint8list.asMap());
     int currentIndex = 2;
 
     final packetIdentifier = buffer.asByteData(currentIndex, 2).getUint16(0);
-    print('packet identifier: $packetIdentifier');
+    // print('packet identifier: $packetIdentifier');
     currentIndex++;
 
-    print(buffer.lengthInBytes);
+    // print(buffer.lengthInBytes);
 
     final List<String> topics = [];
 
     final List<Subscription> subscriptions = [];
 
-    print(currentIndex);
+    // print(currentIndex);
     ///payload
     while (currentIndex < buffer.lengthInBytes - 1) {
       currentIndex++;
@@ -309,6 +341,98 @@ class SubscribeMessageDecoder implements MessageDecoder {
     socket.add(suback.toByte());
     return suback;
   }
+}
+
+class PublishMessageDecoder implements MessageDecoder {
+  @override
+  Message decode(Uint8List uint8list, Socket socket) {
+    int currentIndex = 2;
+    int topicLength = uint8list.buffer.asByteData(currentIndex, 2).getUint16(0);
+    currentIndex += 2;
+    String topic = utf8.decode(uint8list.buffer.asUint8List(currentIndex, topicLength));
+    currentIndex += topicLength;
+    var pub = PublishMessage(
+        qos: 0,
+        topic: topic,
+        packetIdentifier: 1,
+        payload: uint8list.buffer.asUint8List(currentIndex));
+    for (var entry in SubscriptionManager.instance.subscriptions.entries) {
+      if (entry.value.map((e) => e.topic).contains(topic)) {
+        entry.key.socket.add(pub.toByte());
+      }
+    }
+    return pub;
+  }
+}
+
+class UnsubscribeMessageDecoder implements MessageDecoder {
+  @override
+  UnsubackMessage decode(Uint8List uint8list, Socket socket) {
+    final buffer = uint8list.buffer;
+
+    int currentIndex = 2;
+
+    final packetIdentifier = buffer.asByteData(currentIndex, 2).getUint16(0);
+    final List<String> topics = [];
+
+    currentIndex++;
+    /// decode topics
+    try {
+      while (currentIndex < buffer.lengthInBytes - 1) {
+        currentIndex++;
+        int payloadLength = buffer.asByteData(currentIndex, 2).getUint16(0);
+        currentIndex += 2;
+        final topic = utf8.decode(buffer.asUint8List(currentIndex, payloadLength));
+        topics.add(topic);
+        currentIndex += payloadLength;
+      }
+    } on Exception {
+      SessionManager.instance.sessions.removeWhere((client) => client.socket == socket);
+      SubscriptionManager.instance.subscriptions.removeWhere((key, value) => key.socket == socket);
+      socket.close();
+    }
+
+    var client = SessionManager.instance.getClient(socket);
+    SubscriptionManager.instance.subscriptions[client]?.removeWhere((subscription) =>
+        topics.contains(subscription.topic));
+    var unsubackMessage = UnsubackMessage(packetIdentifier: packetIdentifier);
+    socket.add(unsubackMessage.toByte());
+    return unsubackMessage;
+  }
+}
+
+class PingreqMessageDecoder extends MessageDecoder {
+
+  final pingresp = PingrespMessage();
+
+  @override
+  Message decode(Uint8List uint8list, Socket socket) {
+    socket.add(pingresp.toByte());
+    return pingresp;
+  }
+
+}
+
+class PingrespMessage extends Message with RequestMessage {
+  PingrespMessage() : super(type: MessageType.pingresp);
+
+  @override
+  Uint8List toByte() {
+    return Uint8List.fromList([type.fixedHeader(),0]);
+  }
+
+}
+
+class DisconnectMessageDecoder extends MessageDecoder {
+  @override
+  Message decode(Uint8List uint8list, Socket socket) {
+    SessionManager.instance.sessions.removeWhere((client) => client.socket == socket);
+    SubscriptionManager.instance.subscriptions.removeWhere((key, value) => key.socket == socket);
+    socket.close();
+    //TODO shouldn't return
+    return PingrespMessage();
+  }
+
 }
 
 abstract class MessageDecoder {
