@@ -1,13 +1,13 @@
 name: dttp_mqtt
 description: MQTT broker.
-version: 0.2.0
+version: 0.2.1
 homepage: https://www.simonmdsn.com
 
 environment:
   sdk: '>=2.16.2 <3.0.0'
 
 
-# dependencies:
+dependencies:
 #   path: ^1.8.0
 
 dev_dependencies:

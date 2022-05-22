@@ -1,7 +1,6 @@
-import 'dart:convert';
+
 import 'dart:io';
-import 'dart:isolate';
-import 'dart:typed_data';
+
 
 import 'package:dttp_mqtt/dttp_mqtt.dart';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -16,6 +15,7 @@ void main() {
 
     setUp(() async {
       server = Server('localhost', 6000);
+      server.start();
       client = MqttServerClient.withPort(server.address, 'tester', server.port);
       sleep(Duration(seconds: 1));
       // client = MqttServerClient('simonmdsn.com', 'tester');
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('Heavy benchmark', () async {
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 10000; i++) {
         var mqttServerClient = MqttServerClient.withPort(server.address, 'tester$i', server.port);
         await mqttServerClient.connect();
         mqttServerClient.updates?.listen((event) {print(event);});

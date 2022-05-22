@@ -5,15 +5,22 @@ import 'message.dart';
 import 'message_enums.dart';
 
 class MessageDelegator {
+  final publishDecoder = PublishMessageDecoder();
+  final connectDecoder = ConnectMessageDecoder();
+  final subscribeDecoder= SubscribeMessageDecoder();
+  final unsubDecoder = UnsubscribeMessageDecoder();
+  final pingreqDecoder = PingreqMessageDecoder();
+  final disconnectDecoder = DisconnectMessageDecoder();
+
   //TODO handle wrong protocols, versions, and more...
-  void delegate(Uint8List uint8list, Socket socket) {
+  Future<void> delegate(Uint8List uint8list, Socket socket) async {
     final type = MessageTypeUtil.valueOf(uint8list[0] >> 4);
     switch (type) {
       case MessageType.publish:
-        var publish = PublishMessageDecoder().decode(uint8list, socket);
+        publishDecoder.decode(uint8list, socket);
         break;
       case MessageType.connect:
-        var connack = ConnectMessageDecoder().decode(uint8list, socket);
+        var connack = await connectDecoder.decode(uint8list, socket);
         socket.add(connack.toByte());
         break;
       case MessageType.puback:
@@ -29,17 +36,16 @@ class MessageDelegator {
         // TODO: Handle this case.
         break;
       case MessageType.subscribe:
-        var suback = SubscribeMessageDecoder().decode(uint8list, socket);
-        // socket.add(suback.toByte());
+        subscribeDecoder.decode(uint8list, socket);
         break;
       case MessageType.unsubscribe:
-        var unsuback = UnsubscribeMessageDecoder().decode(uint8list, socket);
+        unsubDecoder.decode(uint8list, socket);
         break;
       case MessageType.pingreq:
-        var pingresp = PingreqMessageDecoder().decode(uint8list, socket);
+        pingreqDecoder.decode(uint8list, socket);
         break;
       case MessageType.disconnect:
-        DisconnectMessageDecoder().decode(uint8list, socket);
+        disconnectDecoder.decode(uint8list, socket);
         break;
       case MessageType.auth:
         // TODO: Handle this case.

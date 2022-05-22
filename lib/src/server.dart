@@ -11,7 +11,9 @@ class Server {
   static final delegator = MessageDelegator();
   late final Future<ServerSocket> serverSocket;
 
-  Server(this.address, this.port) {
+  Server(this.address, this.port);
+
+  Future<void> start() async {
     serverSocket = ServerSocket.bind(address, port, shared: true).then((server) {
       server.listen((client) async {
         bool first = true;
@@ -20,7 +22,6 @@ class Server {
             if (first) {
               try {
                 var messageType = MessageTypeUtil.valueOf((bytes)[0] >> 4);
-                print(messageType.name);
                 if (messageType != MessageType.connect) {
                   client.close();
                   return;
@@ -46,17 +47,4 @@ class Server {
       return server;
     });
   }
-
-// final Timer timer = Timer.periodic(Duration(seconds: 5), (timer) {
-//   for (var key in SubscriptionManager.instance.subscriptions.keys) {
-//     SubscriptionManager.instance.subscriptions[key]?.forEach((element) {
-//       key.socket.add(PublishMessage(
-//           qos: element.qos,
-//           topic: element.topic,
-//           packetIdentifier: 1,
-//           payload: Uint8List.fromList(utf8.encode('Hello, world!')))
-//           .toByte());
-//     });
-//   }
-// });
 }
